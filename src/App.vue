@@ -98,49 +98,84 @@ export default {
     };
   },
   methods: {
-    // ... (SEMUA METODE LAINNYA TIDAK PERLU DIUBAH)
-    // Cukup pastikan semua metode dari versi sebelumnya ada di sini:
-    // play, prevTrack, nextTrack, resetPlayer, favorite, generateTime, updateBar,
-    // clickProgress, loadTracksMetadata, parseLRC, loadLyrics, updateLyrics, selectTrack
-    async loadTracksMetadata() {
-      let trackPromises = this.sources.map(async (sourcePath) => {
-        try {
-          const metadata = await mm.fetchFromUrl(sourcePath);
-          const tags = metadata.common;
-          let coverUrl = '/img/default-cover.png';
-          if (tags.picture && tags.picture.length > 0) {
-            const picture = tags.picture[0];
-            const blob = new Blob([picture.data], { type: picture.format });
-            coverUrl = URL.createObjectURL(blob);
-          }
-          return {
-            name: tags.title || sourcePath.split('/').pop(),
-            artist: tags.artist || 'Unknown Artist',
-            cover: coverUrl,
-            source: sourcePath,
-            url: `https://www.youtube.com/results?search_query=${encodeURIComponent(tags.artist || '')}+${encodeURIComponent(tags.title || '')}`,
-            favorited: false,
-          };
-        } catch (error) {
-          console.error(`Gagal membaca metadata untuk ${sourcePath}:`, error);
-          return {
-            name: sourcePath.split('/').pop(),
-            artist: 'Unknown Artist',
-            cover: '/img/default-cover.png',
-            source: sourcePath,
-            url: '#',
-            favorited: false,
-          };
+    // --- (METODE LAIN SEPERTI play, prevTrack, dll. TETAP SAMA) ---
+    play() { /* ... kode tidak berubah ... */ },
+    prevTrack() { /* ... kode tidak berubah ... */ },
+    nextTrack() { /* ... kode tidak berubah ... */ },
+    resetPlayer() { /* ... kode tidak berubah ... */ },
+    favorite() { /* ... kode tidak berubah ... */ },
+    generateTime() { /* ... kode tidak berubah ... */ },
+    updateBar(x) { /* ... kode tidak berubah ... */ },
+    clickProgress(e) { /* ... kode tidak berubah ... */ },
+    parseLRC(lrcContent) { /* ... kode tidak berubah ... */ },
+    updateLyrics() { /* ... kode tidak berubah ... */ },
+    selectTrack(index) { /* ... kode tidak berubah ... */ },
+
+    // --- LOGIKA PEMUATAN YANG BARU DAN DIOPTIMALKAN ---
+
+    // Fungsi pembantu untuk mengambil metadata satu lagu
+    async fetchSingleTrackMetadata(sourcePath) {
+      try {
+        const metadata = await mm.fetchFromUrl(sourcePath);
+        const tags = metadata.common;
+        let coverUrl = '/img/default-cover.png';
+        if (tags.picture && tags.picture.length > 0) {
+          const picture = tags.picture[0];
+          const blob = new Blob([picture.data], { type: picture.format });
+          coverUrl = URL.createObjectURL(blob);
         }
-      });
-      this.tracks = await Promise.all(trackPromises);
-      if (this.tracks.length > 0) {
-        this.currentTrack = this.tracks[0];
-        this.audio.src = this.currentTrack.source;
-        this.loadLyrics(this.currentTrack.source);
+        return {
+          name: tags.title || sourcePath.split('/').pop(),
+          artist: tags.artist || 'Unknown Artist',
+          cover: coverUrl,
+          source: sourcePath,
+          url: `https://www.youtube.com/results?search_query=${encodeURIComponent(tags.artist || '')}+${encodeURIComponent(tags.title || '')}`,
+          favorited: false,
+        };
+      } catch (error) {
+        console.error(`Gagal membaca metadata untuk ${sourcePath}:`, error);
+        return { // Fallback jika gagal
+          name: sourcePath.split('/').pop(),
+          artist: 'Unknown Artist',
+          cover: '/img/default-cover.png',
+          source: sourcePath,
+          url: '#',
+          favorited: false,
+        };
       }
-      this.isLoading = false;
     },
+
+    // Fungsi utama yang baru untuk menginisialisasi pemutar
+    async initializePlayer() {
+      if (this.sources.length === 0) {
+        this.isLoading = false;
+        return;
+      }
+
+      // 1. Muat metadata HANYA untuk lagu pertama
+      const firstTrack = await this.fetchSingleTrackMetadata(this.sources[0]);
+
+      // 2. Siapkan pemutar dengan lagu pertama
+      this.tracks.push(firstTrack);
+      this.currentTrack = firstTrack;
+      this.audio.src = this.currentTrack.source;
+      this.loadLyrics(this.currentTrack.source);
+      
+      // 3. Tampilkan pemutar ke pengguna SEKARANG
+      this.isLoading = false;
+
+      // 4. Muat sisa lagu di latar belakang
+      this.loadRestOfTracksInBackground();
+    },
+
+    async loadRestOfTracksInBackground() {
+      for (let i = 1; i < this.sources.length; i++) {
+        const nextTrack = await this.fetchSingleTrackMetadata(this.sources[i]);
+        // Tambahkan ke daftar putar secara reaktif
+        this.tracks.push(nextTrack);
+      }
+    },
+
     async loadLyrics(trackSource) {
       this.lyrics = [];
       this.currentLyricIndex = -1;
@@ -154,11 +189,12 @@ export default {
         console.warn(`File lirik tidak ditemukan untuk: ${lrcPath}`);
       }
     },
-    // ... dan semua metode lainnya
   },
   created() {
     this.audio = new Audio();
-    this.loadTracksMetadata();
+    // Panggil fungsi inisialisasi yang baru
+    this.initializePlayer();
+
     this.audio.ontimeupdate = () => {
       this.generateTime();
       this.updateLyrics();
@@ -172,22 +208,5 @@ export default {
 <style scoped>
 /* ... (gaya scoped tetap sama) ... */
 </style>
-```
-
-#### Langkah 3: Commit dan Push Perubahan Final
-
-1.  Jalankan `git status` di terminal untuk melihat perubahannya.
-2.  Tambahkan semua perubahan:
-    ```bash
-    git add .
-    ```
-3.  Buat commit:
-    ```bash
-    git commit -m "Final Fix: Pindahkan aset ke public untuk build produksi"
-    ```
-4.  Push ke GitHub:
-    ```bash
-    git push origin master
-    
 
 
