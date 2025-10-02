@@ -1,7 +1,5 @@
-// --- TAMBAHKAN DUA BARIS DI BAWAH INI ---
-import { Buffer } from 'buffer';
-window.Buffer = Buffer;
-// -----------------------------------------
+// Dua baris polyfill manual yang kita tambahkan sebelumnya
+// sekarang sudah tidak diperlukan lagi karena ditangani oleh plugin.
 
 import { createApp } from 'vue'
 import App from './App.vue'
@@ -11,4 +9,5 @@ import './assets/main.scss'
 
 // Buat instance aplikasi Vue dan pasang ke elemen dengan id 'app'
 createApp(App).mount('#app')
+
 

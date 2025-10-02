@@ -14,6 +14,7 @@
     "process": "^0.11.10",
     "stream-browserify": "^3.0.0",
     "util": "^0.12.5",
+    "vite-plugin-node-polyfills": "^0.24.0",
     "vue": "^3.2.47"
   },
   "devDependencies": {
@@ -22,5 +23,3 @@
     "vite": "^4.1.4"
   }
 }
-
-
