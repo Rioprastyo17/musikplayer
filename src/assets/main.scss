@@ -36,20 +36,17 @@ body {
 
 .player__top {
   display: flex;
-  align-items: flex-start;
-  position: relative;
-  z-index: 4;
-  /* Di layar kecil (mobile), kita ubah jadi kolom */
   flex-direction: column;
   align-items: center;
+  width: 100%;
 }
 
 /* Sampul Album */
 .player-cover {
   width: 250px;
   height: 250px;
-  margin-left: 0; /* Hapus margin negatif untuk mobile */
-  margin-top: -70px; /* Tetap tarik ke atas untuk efek visual */
+  margin-left: 0;
+  margin-top: -70px;
   flex-shrink: 0;
   position: relative;
   z-index: 2;
@@ -68,7 +65,6 @@ body {
   top: 0;
 }
 
-/* Efek bayangan di bawah sampul album */
 .player-cover__item::before {
   content: "";
   background: inherit;
@@ -92,14 +88,14 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-top: 25px;
-  padding: 0 10px; /* Beri sedikit padding */
+  padding: 0 10px;
 }
 
 .player-controls__item {
   display: inline-flex;
   font-size: 26px;
   padding: 5px;
-  color: #acb8cc;
+  color: #8b5cf6; /* WARNA UNGU BARU */
   cursor: pointer;
   width: 40px;
   height: 40px;
@@ -109,16 +105,26 @@ body {
   transition: all 0.3s ease-in-out;
 }
 
+/* Efek hover untuk tombol */
+.player-controls__item:hover {
+  color: #532ab9; /* Warna ungu lebih gelap saat disentuh */
+}
+
 .player-controls__item.-xl {
   font-size: 75px;
-  filter: drop-shadow(0 11px 6px rgba(172, 184, 204, 0.45));
+  filter: drop-shadow(0 11px 6px rgba(83, 42, 185, 0.45)); /* Bayangan ungu baru */
   color: #fff;
   width: auto;
   height: auto;
+  transition: transform 0.2s ease;
+}
+
+.player-controls__item.-xl:hover {
+  transform: scale(1.05); /* Sedikit membesar saat disentuh */
 }
 
 .player-controls__item.-favorite.active {
-  color: red;
+  color: #c026d3; /* Warna ungu/pinkish untuk favorit aktif */
 }
 
 /* Progress Bar & Info Album */
@@ -160,6 +166,7 @@ body {
   font-size: 18px;
   opacity: 0.5;
 }
+
 .progress__time {
   margin-top: 2px;
   color: #71829e;
@@ -181,7 +188,7 @@ body {
 .progress__current {
   height: inherit;
   width: 0%;
-  background-color: #a3b3ce;
+  background-color: #532ab9; /* Progress bar warna ungu */
   border-radius: 10px;
 }
 
@@ -197,6 +204,7 @@ body {
   transform: scale(0.55);
   opacity: 0;
 }
+
 .scale-out-leave-to {
   transform: scale(1.2);
   opacity: 0;
@@ -206,6 +214,7 @@ body {
   transform: scale(1.2);
   opacity: 0;
 }
+
 .scale-in-leave-to {
   transform: scale(0.55);
   opacity: 0;
@@ -220,3 +229,4 @@ body {
   stroke: currentColor;
   fill: currentColor;
 }
+

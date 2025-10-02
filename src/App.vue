@@ -87,124 +87,206 @@ export default {
     };
   },
   methods: {
-    // --- (METODE LAINNYA TETAP SAMA) ---
-    generateTime() { /* ... kode tidak berubah ... */ },
-    updateBar(x) { /* ... kode tidak berubah ... */ },
-    clickProgress(e) { /* ... kode tidak berubah ... */ },
-    parseLRC(lrcContent) { /* ... kode tidak berubah ... */ },
-    updateLyrics() { /* ... kode tidak berubah ... */ },
+    // --- FUNGSI PEMBANTU YANG SEKARANG SUDAH LENGKAP ---
+    generateTime() {
+      if (isNaN(this.audio.duration)) return;
+      let width = (100 / this.audio.duration) * this.audio.currentTime;
+      this.barWidth = width + '%';
+      let durmin = Math.floor(this.audio.duration / 60);
+      let dursec = Math.floor(this.audio.duration - durmin * 60);
+      let curmin = Math.floor(this.audio.currentTime / 60);
+      let cursec = Math.floor(this.audio.currentTime - curmin * 60);
+      if (durmin < 10) durmin = '0' + durmin;
+      if (dursec < 10) dursec = '0' + dursec;
+      if (curmin < 10) curmin = '0' + curmin;
+      if (cursec < 10) cursec = '0' + cursec;
+      this.duration = durmin + ':' + dursec;
+      this.currentTime = curmin + ':' + cursec;
+    },
+    updateBar(x) {
+      let progress = this.$refs.progressBar.$refs.progress;
+      if (!progress || !this.currentTrack) return;
+      let maxduration = this.audio.duration;
+      let position = x - progress.getBoundingClientRect().left;
+      let percentage = (100 * position) / progress.offsetWidth;
+      if (percentage > 100) percentage = 100;
+      if (percentage < 0) percentage = 0;
+      this.barWidth = percentage + '%';
+      this.audio.currentTime = (maxduration * percentage) / 100;
+    },
+    clickProgress(e) {
+      if (!this.currentTrack) { // Jika belum ada lagu, mainkan yang pertama
+        this.loadAndPlayTrack(0);
+        // Kita perlu sedikit penundaan sebelum update bar karena durasi belum siap
+        setTimeout(() => this.updateBar(e.pageX), 500);
+        return;
+      }
+      this.updateBar(e.pageX);
+      this.audio.play();
+      this.isTimerPlaying = true;
+    },
+    parseLRC(lrcContent) {
+      this.lyrics = [];
+      const lines = lrcContent.split('\n');
+      const regex = /\[(\d{2}):(\d{2})[.:](\d{2,3})\](.*)/;
+      for (const line of lines) {
+        const match = line.match(regex);
+        if (match) {
+          const minutes = parseInt(match[1], 10);
+          const seconds = parseInt(match[2], 10);
+          const milliseconds = parseInt(match[3].padEnd(3, '0'), 10);
+          const time = minutes * 60 + seconds + milliseconds / 1000;
+          const text = match[4].trim().replace(/"/g, '');
+          if (text) {
+            this.lyrics.push({ time, text });
+          }
+        }
+      }
+    },
+    updateLyrics() {
+      if (!this.lyrics.length) return;
+      let newIndex = this.lyrics.findIndex((lyric, index) => {
+        const nextLyric = this.lyrics[index + 1];
+        return this.audio.currentTime >= lyric.time && (!nextLyric || this.audio.currentTime < nextLyric.time);
+      });
+      if (newIndex !== -1) {
+        this.currentLyricIndex = newIndex;
+      }
+    },
     favorite() {
       if (this.currentTrack) {
         this.tracks[this.currentTrackIndex].favorited = !this.tracks[this.currentTrackIndex].favorited;
       }
     },
-    async loadLyrics(trackSource) { /* ... kode tidak berubah ... */ },
+    async loadLyrics(trackSource) {
+      this.lyrics = [];
+      this.currentLyricIndex = -1;
+      const lrcPath = trackSource.substring(0, trackSource.lastIndexOf('.')) + '.lrc';
+      try {
+        const response = await fetch(lrcPath);
+        if (!response.ok) throw new Error('LRC file not found');
+        const lrcContent = await response.text();
+        this.parseLRC(lrcContent);
+      } catch (error) {
+        console.warn(`File lirik tidak ditemukan untuk: ${lrcPath}`);
+      }
+    },
     
-    // --- LOGIKA PEMUATAN YANG BARU ---
-
-    // Metode utama untuk memuat dan memutar lagu berdasarkan indeksnya
+    // --- LOGIKA PEMUATAN ---
     async loadAndPlayTrack(index) {
-      // Jika lagu yang sama diklik saat sedang loading, jangan lakukan apa-apa
       if (this.isMetadataLoading) return;
-
-      // Hentikan lagu yang sedang berjalan jika ada
       this.audio.pause();
       this.isTimerPlaying = false;
       this.isMetadataLoading = true;
       
+      // Tetapkan placeholder sebagai lagu saat ini agar UI tidak kosong saat loading
       this.currentTrackIndex = index;
-      const trackToLoad = this.tracks[index];
+      this.currentTrack = this.tracks[index];
 
-      // Periksa apakah metadata sudah dimuat sebelumnya
+      const trackToLoad = this.tracks[index];
       if (!trackToLoad.isLoaded) {
-        // Jika belum, ambil metadata
         const metadata = await this.fetchSingleTrackMetadata(trackToLoad.source);
-        // Perbarui data lagu di dalam array tracks
+        // Perbarui data lagu di dalam array tracks secara reaktif
         this.tracks[index] = { ...trackToLoad, ...metadata, isLoaded: true };
       }
-
-      // Perbarui lagu saat ini dan mulai pemutaran
+      // Perbarui lagi lagu saat ini dengan metadata yang sudah lengkap
       this.currentTrack = this.tracks[index];
       this.resetPlayerAndPlay();
-      this.isMetadataLoading = false;
     },
     
-    // Tombol putar utama
     play() {
-      // Jika belum ada lagu yang pernah diputar, putar lagu pertama
       if (this.currentTrackIndex === -1) {
         this.loadAndPlayTrack(0);
         return;
       }
-      // Jika ada lagu yang sedang dijeda, lanjutkan
       if (this.audio.paused) {
         this.audio.play();
         this.isTimerPlaying = true;
       } else {
-        // Jika sedang berjalan, jeda
         this.audio.pause();
         this.isTimerPlaying = false;
       }
     },
 
-    // Tombol Sebelumnya & Berikutnya
     prevTrack() {
-      if (this.tracks.length === 0) return;
+      if (this.tracks.length <= 1) return;
       const newIndex = this.currentTrackIndex > 0 ? this.currentTrackIndex - 1 : this.tracks.length - 1;
       this.transitionName = 'scale-in';
       this.loadAndPlayTrack(newIndex);
     },
     nextTrack() {
-      if (this.tracks.length === 0) return;
+      if (this.tracks.length <= 1) return;
       const newIndex = this.currentTrackIndex < this.tracks.length - 1 ? this.currentTrackIndex + 1 : 0;
       this.transitionName = 'scale-out';
       this.loadAndPlayTrack(newIndex);
     },
 
-    // Saat memilih lagu dari daftar putar
     selectTrack(index) {
       this.isPlaylistVisible = false;
       if (this.currentTrackIndex === index) return;
       this.loadAndPlayTrack(index);
     },
 
-    // Membantu mereset state dan memulai pemutaran
     resetPlayerAndPlay() {
       this.barWidth = '0%';
       this.audio.currentTime = 0;
       this.audio.src = this.currentTrack.source;
       this.loadLyrics(this.currentTrack.source);
       
-      // Menggunakan event 'canplay' untuk memastikan file audio siap sebelum diputar
       this.audio.oncanplay = () => {
         this.audio.play();
         this.isTimerPlaying = true;
-        this.audio.oncanplay = null; // Hapus listener agar tidak berjalan lagi
+        this.isMetadataLoading = false;
+        this.audio.oncanplay = null;
       };
+      // Fallback jika 'oncanplay' tidak terpicu
+      this.audio.load();
     },
 
-    // Fungsi pembantu untuk mengambil metadata satu lagu (tidak berubah)
     async fetchSingleTrackMetadata(sourcePath) {
-       // ... (kode ini tetap sama persis seperti versi sebelumnya)
+      try {
+        const metadata = await mm.fetchFromUrl(sourcePath);
+        const tags = metadata.common;
+        let coverUrl = '/img/default-cover.png';
+        if (tags.picture && tags.picture.length > 0) {
+          const picture = tags.picture[0];
+          const blob = new Blob([picture.data], { type: picture.format });
+          coverUrl = URL.createObjectURL(blob);
+        }
+        return {
+          name: tags.title || sourcePath.split('/').pop(),
+          artist: tags.artist || 'Unknown Artist',
+          cover: coverUrl,
+        };
+      } catch (error) {
+        console.error(`Gagal membaca metadata untuk ${sourcePath}:`, error);
+        return {
+          name: sourcePath.split('/').pop(),
+          artist: 'Error Loading Metadata',
+          cover: '/img/default-cover.png',
+        };
+      }
     },
   },
   created() {
-    // Inisialisasi audio object
     this.audio = new Audio();
-    this.audio.ontimeupdate = () => this.generateTime();
+    this.audio.ontimeupdate = () => { this.generateTime(); this.updateLyrics(); };
     this.audio.onloadedmetadata = () => this.generateTime();
     this.audio.onended = () => this.nextTrack();
 
-    // Buat daftar putar awal dengan data placeholder
     this.tracks = this.sources.map(source => ({
-      name: source.split('/').pop().replace(/\.\w+$/, ''), // Tampilkan nama file tanpa ekstensi
+      name: source.split('/').pop().replace(/\.\w+$/, ''),
       artist: 'Loading...',
       cover: '/img/default-cover.png',
       source: source,
       url: '#',
       favorited: false,
-      isLoaded: false, // Tandai bahwa metadata belum dimuat
+      isLoaded: false,
     }));
+    
+    // Jangan pilih lagu apa pun saat awal
+    this.currentTrack = null;
+    this.currentTrackIndex = -1;
   },
 };
 </script>

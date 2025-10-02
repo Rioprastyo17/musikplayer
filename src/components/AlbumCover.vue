@@ -1,16 +1,16 @@
 <template>
   <div class="player-cover">
-    <!-- 
-      Transition-group masih digunakan untuk animasi.
-      Sekarang kita hanya merender SATU elemen div di dalamnya.
-      'key' yang unik akan memberitahu Vue kapan harus menjalankan animasi transisi.
-    -->
     <transition-group :name="transitionName">
       <div
         class="player-cover__item"
         :key="currentCover"
         :style="{ backgroundImage: `url(${currentCover})` }"
-      ></div>
+      >
+        <!-- Tampilkan overlay spinner jika metadata sedang dimuat -->
+        <div class="loading-spinner-overlay" v-if="isMetadataLoading">
+          <div class="spinner"></div>
+        </div>
+      </div>
     </transition-group>
   </div>
 </template>
@@ -30,16 +30,55 @@ export default {
       type: String,
       default: 'scale-out',
     },
+    // Prop baru untuk mengetahui status loading
+    isMetadataLoading: {
+      type: Boolean,
+      default: false,
+    },
   },
   computed: {
-    // Computed property untuk mendapatkan URL sampul saat ini dengan aman.
-    // Ini lebih baik daripada logika kompleks di dalam template.
     currentCover() {
-      return this.tracks[this.currentTrackIndex]
-        ? this.tracks[this.currentTrackIndex].cover
-        : '/img/default-cover.png';
+      // Jika belum ada lagu yang dipilih atau tracks masih kosong, tampilkan gambar default
+      if (this.currentTrackIndex === -1 || !this.tracks[this.currentTrackIndex]) {
+        return '/img/default-cover.png';
+      }
+      return this.tracks[this.currentTrackIndex].cover;
     },
   },
 };
 </script>
+
+<style scoped>
+/* Gaya untuk overlay dan spinner */
+.loading-spinner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(238, 243, 247, 0.7); /* Warna senada dengan background player */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 15px;
+  z-index: 5;
+  backdrop-filter: blur(2px);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #532ab9;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>
+
 
