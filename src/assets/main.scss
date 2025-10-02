@@ -1,0 +1,222 @@
+/* Gaya Dasar dan Reset Sederhana */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #dfe7ef;
+  font-family: "Bitter", serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Wrapper Utama */
+.wrapper {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Pemutar Musik Utama */
+.player {
+  background: #eef3f7;
+  width: 100%;
+  max-width: 410px; /* Lebar maksimum di layar besar */
+  min-height: 480px;
+  box-shadow: 0px 15px 35px -5px rgba(50, 88, 130, 0.32);
+  border-radius: 15px;
+  padding: 20px;
+  position: relative; /* Menambahkan ini untuk posisi tombol playlist nanti */
+}
+
+.player__top {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  z-index: 4;
+  /* Di layar kecil (mobile), kita ubah jadi kolom */
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Sampul Album */
+.player-cover {
+  width: 250px;
+  height: 250px;
+  margin-left: 0; /* Hapus margin negatif untuk mobile */
+  margin-top: -70px; /* Tetap tarik ke atas untuk efek visual */
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+  border-radius: 15px;
+}
+
+.player-cover__item {
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  width: 100%;
+  height: 100%;
+  border-radius: 15px;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+/* Efek bayangan di bawah sampul album */
+.player-cover__item::before {
+  content: "";
+  background: inherit;
+  width: 100%;
+  height: 100%;
+  box-shadow: 0px 10px 40px 0px rgba(76, 70, 124, 0.5);
+  display: block;
+  z-index: -1;
+  position: absolute;
+  top: 30px;
+  transform: scale(0.9);
+  filter: blur(10px);
+  opacity: 0.9;
+  border-radius: 15px;
+}
+
+/* Kontrol Pemutar */
+.player-controls {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 25px;
+  padding: 0 10px; /* Beri sedikit padding */
+}
+
+.player-controls__item {
+  display: inline-flex;
+  font-size: 26px;
+  padding: 5px;
+  color: #acb8cc;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.3s ease-in-out;
+}
+
+.player-controls__item.-xl {
+  font-size: 75px;
+  filter: drop-shadow(0 11px 6px rgba(172, 184, 204, 0.45));
+  color: #fff;
+  width: auto;
+  height: auto;
+}
+
+.player-controls__item.-favorite.active {
+  color: red;
+}
+
+/* Progress Bar & Info Album */
+.progress {
+  width: 100%;
+  margin-top: 25px;
+  user-select: none;
+}
+
+.progress__top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.album-info {
+  color: #71829e;
+  flex: 1;
+  padding-right: 15px;
+}
+
+.album-info__name {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  line-height: 1.2em;
+}
+
+.album-info__track {
+  font-weight: 400;
+  font-size: 16px;
+  opacity: 0.7;
+  line-height: 1.2em;
+}
+
+.progress__duration {
+  color: #71829e;
+  font-weight: 700;
+  font-size: 18px;
+  opacity: 0.5;
+}
+.progress__time {
+  margin-top: 2px;
+  color: #71829e;
+  font-weight: 700;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.progress__bar {
+  height: 6px;
+  width: 100%;
+  cursor: pointer;
+  background-color: #d0d8e6;
+  display: inline-block;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+.progress__current {
+  height: inherit;
+  width: 0%;
+  background-color: #a3b3ce;
+  border-radius: 10px;
+}
+
+/* Transisi Vue.js untuk sampul album */
+.scale-out-enter-active,
+.scale-out-leave-active,
+.scale-in-enter-active,
+.scale-in-leave-active {
+  transition: all 0.35s ease-in-out;
+}
+
+.scale-out-enter-from {
+  transform: scale(0.55);
+  opacity: 0;
+}
+.scale-out-leave-to {
+  transform: scale(1.2);
+  opacity: 0;
+}
+
+.scale-in-enter-from {
+  transform: scale(1.2);
+  opacity: 0;
+}
+.scale-in-leave-to {
+  transform: scale(0.55);
+  opacity: 0;
+}
+
+/* Ikon SVG Global */
+.icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  stroke-width: 0;
+  stroke: currentColor;
+  fill: currentColor;
+}
