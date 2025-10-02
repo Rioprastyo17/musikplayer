@@ -1,3 +1,59 @@
+<template>
+  <div class="wrapper">
+    <!-- Tampilkan loading saat metadata sedang diekstrak -->
+    <div v-if="isLoading" class="loading-indicator">
+      <p>Memuat lagu...</p>
+    </div>
+
+    <!-- Tampilkan pemutar setelah lagu berhasil dimuat -->
+    <div class="player" v-else-if="tracks.length > 0">
+      <div class="player__top">
+        <AlbumCover
+          :tracks="tracks"
+          :current-track-index="currentTrackIndex"
+          :transition-name="transitionName"
+        />
+        <LyricsDisplay
+          :lyrics="lyrics"
+          :current-lyric-index="currentLyricIndex"
+        />
+        <PlayerControls
+          :is-playing="isTimerPlaying"
+          :is-favorited="currentTrack.favorited"
+          :track-url="currentTrack.url"
+          @play="play"
+          @prev="prevTrack"
+          @next="nextTrack"
+          @favorite="favorite"
+          @toggle-playlist="isPlaylistVisible = !isPlaylistVisible"
+        />
+      </div>
+      <ProgressBar
+        ref="progressBar"
+        :duration="duration"
+        :current-time="currentTime"
+        :bar-width="barWidth"
+        :current-track="currentTrack"
+        @progress-clicked="clickProgress"
+      />
+    </div>
+
+    <!-- Tampilkan pesan error jika tidak ada lagu yang bisa dimuat -->
+    <div v-else class="loading-indicator">
+      <p>Gagal memuat lagu. Pastikan file musik ada di folder `public/mp3`.</p>
+    </div>
+
+    <!-- Komponen Playlist akan muncul sebagai overlay jika isPlaylistVisible bernilai true -->
+    <Playlist
+      v-if="isPlaylistVisible"
+      :tracks="tracks"
+      :current-track-index="currentTrackIndex"
+      @close="isPlaylistVisible = false"
+      @track-selected="selectTrack"
+    />
+  </div>
+</template>
+
 <script>
 // Impor semua komponen anak
 import AlbumCover from './components/AlbumCover.vue';
@@ -5,6 +61,8 @@ import PlayerControls from './components/PlayerControls.vue';
 import ProgressBar from './components/ProgressBar.vue';
 import LyricsDisplay from './components/LyricsDisplay.vue';
 import Playlist from './components/Playlist.vue';
+
+// Impor library music-metadata-browser
 import * as mm from 'music-metadata-browser';
 
 export default {
@@ -24,11 +82,11 @@ export default {
       isTimerPlaying: false,
       isLoading: true,
       // KEMBALI MENGGUNAKAN DAFTAR MANUAL
-      // Pastikan nama file di sini SAMA PERSIS dengan file di folder public/mp3
+      // GANTI DENGAN NAMA FILE ANDA YANG SEBENARNYA
       sources: [
         '/mp3/01 - Ada Band - Surga Cinta.flac',
         '/mp3/03 - Ada Band - Karena Wanita (Ingin Dimengerti).flac',
-        // Tambahkan semua path file musik Anda yang lain di sini
+        // Tambahkan semua file musik Anda yang lain di sini
       ],
       tracks: [],
       currentTrack: {},
@@ -40,87 +98,10 @@ export default {
     };
   },
   methods: {
-    // ... SEMUA METODE LAINNYA (play, nextTrack, loadTracksMetadata, dll.)
-    // TIDAK PERLU DIUBAH. Cukup salin semua metode dari versi App.vue
-    // sebelumnya ke sini. Logikanya sudah benar, hanya sumber datanya
-    // yang kita ubah.
-    
-    // --- KONTROL AUDIO ---
-    play() {
-      if (this.audio.paused) {
-        this.audio.play();
-        this.isTimerPlaying = true;
-      } else {
-        this.audio.pause();
-        this.isTimerPlaying = false;
-      }
-    },
-    prevTrack() {
-      this.transitionName = 'scale-in';
-      this.currentTrackIndex =
-        this.currentTrackIndex > 0
-          ? this.currentTrackIndex - 1
-          : this.tracks.length - 1;
-      this.currentTrack = this.tracks[this.currentTrackIndex];
-      this.resetPlayer();
-    },
-    nextTrack() {
-      this.transitionName = 'scale-out';
-      this.currentTrackIndex =
-        this.currentTrackIndex < this.tracks.length - 1
-          ? this.currentTrackIndex + 1
-          : 0;
-      this.currentTrack = this.tracks[this.currentTrackIndex];
-      this.resetPlayer();
-    },
-    resetPlayer() {
-      this.barWidth = '0%';
-      this.audio.currentTime = 0;
-      this.audio.src = this.currentTrack.source;
-      this.loadLyrics(this.currentTrack.source);
-      setTimeout(() => {
-        if (this.isTimerPlaying) {
-          this.audio.play();
-        }
-      }, 300);
-    },
-    favorite() {
-      this.tracks[this.currentTrackIndex].favorited =
-        !this.tracks[this.currentTrackIndex].favorited;
-    },
-    generateTime() {
-      if (isNaN(this.audio.duration)) return;
-      let width = (100 / this.audio.duration) * this.audio.currentTime;
-      this.barWidth = width + '%';
-      let durmin = Math.floor(this.audio.duration / 60);
-      let dursec = Math.floor(this.audio.duration - durmin * 60);
-      let curmin = Math.floor(this.audio.currentTime / 60);
-      let cursec = Math.floor(this.audio.currentTime - curmin * 60);
-      if (durmin < 10) durmin = '0' + durmin;
-      if (dursec < 10) dursec = '0' + dursec;
-      if (curmin < 10) curmin = '0' + curmin;
-      if (cursec < 10) cursec = '0' + cursec;
-      this.duration = durmin + ':' + dursec;
-      this.currentTime = curmin + ':' + cursec;
-    },
-    updateBar(x) {
-      let progress = this.$refs.progressBar.$refs.progress;
-      if (!progress) return;
-      let maxduration = this.audio.duration;
-      let position = x - progress.getBoundingClientRect().left;
-      let percentage = (100 * position) / progress.offsetWidth;
-      if (percentage > 100) percentage = 100;
-      if (percentage < 0) percentage = 0;
-      this.barWidth = percentage + '%';
-      this.audio.currentTime = (maxduration * percentage) / 100;
-    },
-    clickProgress(e) {
-      if (!this.isTimerPlaying) {
-        this.isTimerPlaying = true;
-      }
-      this.updateBar(e.pageX);
-      this.audio.play();
-    },
+    // ... (SEMUA METODE LAINNYA TIDAK PERLU DIUBAH)
+    // Cukup pastikan semua metode dari versi sebelumnya ada di sini:
+    // play, prevTrack, nextTrack, resetPlayer, favorite, generateTime, updateBar,
+    // clickProgress, loadTracksMetadata, parseLRC, loadLyrics, updateLyrics, selectTrack
     async loadTracksMetadata() {
       let trackPromises = this.sources.map(async (sourcePath) => {
         try {
@@ -160,24 +141,6 @@ export default {
       }
       this.isLoading = false;
     },
-    parseLRC(lrcContent) {
-      this.lyrics = [];
-      const lines = lrcContent.split('\n');
-      const regex = /\[(\d{2}):(\d{2})[.:](\d{2,3})\](.*)/;
-      for (const line of lines) {
-        const match = line.match(regex);
-        if (match) {
-          const minutes = parseInt(match[1], 10);
-          const seconds = parseInt(match[2], 10);
-          const milliseconds = parseInt(match[3].padEnd(3, '0'), 10);
-          const time = minutes * 60 + seconds + milliseconds / 1000;
-          const text = match[4].trim().replace(/"/g, '');
-          if (text) {
-             this.lyrics.push({ time, text });
-          }
-        }
-      }
-    },
     async loadLyrics(trackSource) {
       this.lyrics = [];
       this.currentLyricIndex = -1;
@@ -191,26 +154,7 @@ export default {
         console.warn(`File lirik tidak ditemukan untuk: ${lrcPath}`);
       }
     },
-    updateLyrics() {
-      if (!this.lyrics.length) return;
-      let newIndex = this.lyrics.findIndex((lyric, index) => {
-        const nextLyric = this.lyrics[index + 1];
-        return this.audio.currentTime >= lyric.time && (!nextLyric || this.audio.currentTime < nextLyric.time);
-      });
-      if (newIndex !== -1) {
-        this.currentLyricIndex = newIndex;
-      }
-    },
-    selectTrack(index) {
-      if (this.currentTrackIndex === index) {
-        this.isPlaylistVisible = false;
-        return;
-      }
-      this.currentTrackIndex = index;
-      this.currentTrack = this.tracks[this.currentTrackIndex];
-      this.resetPlayer();
-      this.isPlaylistVisible = false;
-    },
+    // ... dan semua metode lainnya
   },
   created() {
     this.audio = new Audio();
@@ -224,5 +168,26 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* ... (gaya scoped tetap sama) ... */
+</style>
+```
+
+#### Langkah 3: Commit dan Push Perubahan Final
+
+1.  Jalankan `git status` di terminal untuk melihat perubahannya.
+2.  Tambahkan semua perubahan:
+    ```bash
+    git add .
+    ```
+3.  Buat commit:
+    ```bash
+    git commit -m "Final Fix: Pindahkan aset ke public untuk build produksi"
+    ```
+4.  Push ke GitHub:
+    ```bash
+    git push origin master
+    
 
 
