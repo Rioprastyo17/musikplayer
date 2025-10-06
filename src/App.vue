@@ -72,7 +72,7 @@ export default {
         {
           name: "Surga Cinta",
           artist: "Ada Band",
-          cover: "/img/album-art-1.jpg", // Ganti dengan path gambar Anda di folder public/img
+          cover: "/img/default-cover.png", // Ganti dengan path gambar Anda di folder public/img
           source: "/mp3/01 - Ada Band - Surga Cinta.flac",
           url: "https://www.youtube.com/watch?v=...",
           favorited: true
@@ -80,12 +80,28 @@ export default {
         {
           name: "Karena Wanita (Ingin Dimengerti)",
           artist: "Ada Band",
-          cover: "/img/album-art-2.jpg",
+          cover: "/img/default-cover.png",
           source: "/mp3/03 - Ada Band - Karena Wanita (Ingin Dimengerti).flac",
           url: "https://www.youtube.com/watch?v=...",
           favorited: false
         },
-        // Tambahkan lagu-lagu lain di sini
+        {
+          name: "Aku Bukan Untukmu",
+          artist: "Dewandaru Rock",
+          cover: "/img/default-cover.png",
+          source: "/mp3/DEWANDARU Rock Band KARANGAWEN DEMAK (AKU BKN UNTUKMU).mp3",
+          url: "https://www.youtube.com/watch?v=...",
+          favorited: false
+        },
+        {
+          name: "Problema",
+          artist: "Dewandaru Rock",
+          cover: "/img/default-cover.png",
+          source: "/mp3/DEWANDARU ROCK BAND on PROBLEMA.mp4.mp3",
+          url: "https://www.youtube.com/watch?v=...",
+          favorited: false
+        },
+        // Tambahkan lagu-lagu lain di sini 
       ],
       currentTrack: null,
       currentTrackIndex: 0, // Mulai dari lagu pertama
